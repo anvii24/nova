@@ -1,0 +1,16 @@
+{
+  "name": "Nova's Climb",
+  "short_name": "Nova",
+  "description": "A study companion: Nova climbs a starlit mountain as you finish focus sessions.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#05061a",
+  "theme_color": "#05061a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,1283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nova's Climb</title>
+<meta name="description" content="A study companion: Nova, a little alien-fairy on a cloud, climbs a starlit mountain as you finish focus sessions.">
+<meta name="theme-color" content="#05061a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nova">
+<style>
+/* Fonts are bundled with the app, so it works offline */
+@font-face { font-family: "Instrument Serif"; font-style: normal; font-weight: 400; font-display: swap; src: url("instrument-serif-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Instrument Serif"; font-style: italic; font-weight: 400; font-display: swap; src: url("instrument-serif-latin-400-italic.woff2") format("woff2"); }
+@font-face { font-family: "Hanken Grotesk"; font-style: normal; font-weight: 400; font-display: swap; src: url("hanken-grotesk-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Hanken Grotesk"; font-style: normal; font-weight: 500; font-display: swap; src: url("hanken-grotesk-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Hanken Grotesk"; font-style: normal; font-weight: 600; font-display: swap; src: url("hanken-grotesk-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Space Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("space-mono-latin-400-normal.woff2") format("woff2"); }
+/*
+  Nova's Climb — a study companion, lo-fi night edition.
+  Layout: one screen. A full-bleed night mountain scene (aurora, stars, rim-lit silhouettes) whose
+  colours shift gently with the real time of day; dark glass panels float on top
+  (timer bottom-left, journal and settings slide in from the right).
+  Deliberately single-theme and dark.
+*/
+:root {
+  color-scheme: dark;
+  --ink: #07081a;
+  --panel: rgba(13, 13, 34, 0.62);
+  --panel-strong: rgba(18, 17, 44, 0.9);
+  --panel-fg: #eeeaff;
+  --panel-muted: #a9a3c9;
+  --line: rgba(201, 184, 255, 0.16);
+  --line-2: rgba(201, 184, 255, 0.32);
+  --accent: #c9b8ff;            /* starlight lavender */
+  --accent-fg: #120f2a;
+  --gold: #f3d48b;              /* lantern gold */
+  --rose: #f2b8d4;
+  --aurora: #8ff0d0;            /* Nova's glow */
+
+  --serif: "Instrument Serif", "Cormorant Garamond", Georgia, serif;
+  --sans: "Hanken Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "Space Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0; overflow: hidden;
+  background: var(--ink);
+  color: var(--panel-fg);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.label, .subject label, .drawer h3, .stat span, .status { font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* ---------- Scene ---------- */
+#scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+.star { animation: twinkle var(--t, 3s) ease-in-out infinite alternate; }
+@keyframes twinkle { from { opacity: 0.2; } to { opacity: 1; } }
+.drift { animation: drift var(--d, 160s) linear infinite; }
+@keyframes drift { from { transform: translateX(-400px); } to { transform: translateX(2000px); } }
+.aurora path { animation: sway var(--s, 18s) ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes sway { from { transform: translateX(-30px) scaleY(0.92); opacity: 0.55; } to { transform: translateX(40px) scaleY(1.08); opacity: 0.95; } }
+.trail { fill: none; stroke: rgba(238, 234, 255, 0.35); stroke-width: 3; stroke-dasharray: 1.5 11; stroke-linecap: round; stroke-linejoin: round; }
+.trail-done { fill: none; stroke: #f3d48b; stroke-width: 4; stroke-dasharray: 1.5 11; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 5px rgba(243, 212, 139, 0.9)); }
+.camp .pole { stroke: rgba(238, 234, 255, 0.5); stroke-width: 2; stroke-linecap: round; }
+.camp .lantern { fill: rgba(238, 234, 255, 0.25); transition: fill .8s ease, filter .8s ease; }
+.camp.reached .lantern { fill: #f3d48b; filter: drop-shadow(0 0 8px rgba(243, 212, 139, 1)); }
+.camp .flag { fill: rgba(242, 184, 212, 0.35); transition: fill .8s ease; }
+.camp.reached .flag { fill: #f2b8d4; filter: drop-shadow(0 0 8px rgba(242, 184, 212, 0.9)); }
+
+/* Nova */
+#nimbu { cursor: pointer; }
+#nimbu .float { animation: float 5s ease-in-out infinite; }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+#nimbu .wing { transform-box: fill-box; animation: flap 1.4s ease-in-out infinite; }
+#nimbu .wing.l { transform-origin: right bottom; }
+#nimbu .wing.r { transform-origin: left bottom; animation-name: flapR; animation-delay: -0.7s; }
+@keyframes flap { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-12deg); } }
+@keyframes flapR { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(12deg); } }
+#nimbu .aura { animation: aura 3.5s ease-in-out infinite; }
+@keyframes aura { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.8; } }
+#nimbu .eyes-open, #nimbu .eyes-closed, #nimbu .eyes-happy, #nimbu .shades, #nimbu .zzz, #nimbu .book { display: none; }
+#nimbu[data-mood="idle"] .eyes-open, #nimbu[data-mood="focus"] .eyes-open { display: inline; }
+#nimbu[data-mood="focus"] .book { display: inline; }
+#nimbu[data-mood="sleep"] .eyes-closed, #nimbu[data-mood="sleep"] .zzz { display: inline; }
+#nimbu[data-mood="happy"] .eyes-happy, #nimbu[data-mood="party"] .eyes-happy { display: inline; }
+#nimbu[data-mood="party"] .shades { display: inline; }
+#nimbu[data-mood="sleep"] .wing { animation-duration: 4s; }
+#nimbu[data-mood="sleep"] .aura { opacity: 0.25; animation: none; }
+#nimbu .dancer { transform-box: fill-box; transform-origin: center bottom; }
+#nimbu[data-mood="happy"] .dancer, #nimbu[data-mood="party"] .dancer { animation: dance 0.8s ease-in-out infinite; }
+@keyframes dance { 0%, 100% { transform: translateY(0) rotate(0deg); } 25% { transform: translateY(-7px) rotate(-7deg); } 75% { transform: translateY(-7px) rotate(7deg); } }
+#nimbu .zzz text { font-family: var(--serif); font-style: italic; font-size: 20px; fill: #c9b8ff; animation: zz 3s ease-in-out infinite; opacity: 0; }
+#nimbu .zzz text:nth-child(2) { animation-delay: 1.2s; font-size: 15px; }
+@keyframes zz { 0% { opacity: 0; transform: translate(0, 6px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(10px, -14px); } }
+#nimbuMove { transition: transform 1.6s cubic-bezier(.3, .8, .3, 1); }
+
+/* ---------- Speech bubble ---------- */
+#bubble {
+  position: fixed; z-index: 5; max-width: min(290px, calc(100vw - 32px));
+  padding: 10px 16px 12px; border-radius: 16px 16px 16px 4px;
+  background: var(--panel-strong); color: var(--panel-fg);
+  border: 1px solid var(--line-2);
+  font-family: var(--serif); font-style: italic; font-size: 1.3rem; line-height: 1.25;
+  box-shadow: 0 0 30px rgba(201, 184, 255, 0.18), 0 12px 30px rgba(0, 0, 0, 0.4);
+  transform-origin: left bottom;
+  transition: opacity .3s ease, transform .3s ease;
+  pointer-events: none;
+}
+#bubble.hide { opacity: 0; transform: scale(0.94); }
+
+/* ---------- Top bar ---------- */
+.topbar {
+  position: fixed; z-index: 6; top: 0; left: 0; right: 0;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  padding-left: max(18px, env(safe-area-inset-left, 0px));
+  padding-right: max(18px, env(safe-area-inset-right, 0px));
+  pointer-events: none;
+}
+.topbar > * { pointer-events: auto; }
+.brand { display: flex; flex-direction: column; gap: 4px; padding: 2px 4px; }
+.brand b { font-family: var(--serif); font-weight: 400; font-size: 1.7rem; line-height: 1; letter-spacing: -0.01em; }
+.brand b em { color: var(--accent); text-shadow: 0 0 18px rgba(201, 184, 255, 0.6); }
+.brand span { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--panel-muted); }
+.tools { display: flex; gap: 8px; }
+.iconbtn {
+  height: 44px; min-width: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line-2);
+  background: var(--panel); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.9rem;
+  transition: box-shadow .2s ease, border-color .2s ease;
+}
+.iconbtn:hover { border-color: var(--accent); box-shadow: 0 0 20px rgba(201, 184, 255, 0.25); }
+.iconbtn svg { width: 18px; height: 18px; flex: none; }
+.iconbtn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 22px rgba(201, 184, 255, 0.35); }
+.iconbtn .txt { display: inline; }
+
+/* ---------- Timer card ---------- */
+.timer {
+  position: fixed; z-index: 4;
+  left: max(18px, env(safe-area-inset-left, 0px));
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  width: min(370px, calc(100% - 36px));
+  padding: 20px 22px; border-radius: 24px;
+  background: var(--panel); border: 1px solid var(--line-2);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 0 40px rgba(201, 184, 255, 0.12), 0 24px 60px rgba(0, 0, 0, 0.5);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.modes { display: flex; gap: 4px; padding: 3px; border-radius: 999px; border: 1px solid var(--line); align-self: flex-start; }
+.modes button { border: 0; background: transparent; padding: 6px 14px; border-radius: 999px; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--panel-muted); }
+.modes button[aria-pressed="true"] { background: var(--line-2); color: var(--panel-fg); }
+.subject label { display: block; font-size: 0.68rem; color: var(--panel-muted); margin-bottom: 8px; }
+.subject input {
+  width: 100%; height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04); font-size: 16px; font-weight: 500;
+}
+.subject input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(201, 184, 255, 0.15); }
+.subject input::placeholder { color: var(--panel-muted); opacity: 0.8; }
+.clock { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.time { font-family: var(--serif); font-weight: 400; font-size: clamp(4.2rem, 10vw, 5.4rem); line-height: 0.85; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; text-shadow: 0 0 30px rgba(201, 184, 255, 0.35); }
+.ring { width: 52px; height: 52px; flex: none; }
+.ring circle { fill: none; stroke-width: 3; }
+.ring .bg { stroke: var(--line); }
+.ring .fg { stroke: var(--accent); stroke-linecap: round; transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset .5s linear; filter: drop-shadow(0 0 4px rgba(201, 184, 255, 0.8)); }
+.controls { display: flex; gap: 10px; }
+.btn {
+  height: 48px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--line-2);
+  background: transparent; font-weight: 600; font-size: 0.98rem;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  transition: transform .12s ease, box-shadow .2s ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn.primary { flex: 1; background: var(--accent); color: var(--accent-fg); border-color: var(--accent); box-shadow: 0 0 28px rgba(201, 184, 255, 0.4); }
+.btn.primary:hover { box-shadow: 0 0 38px rgba(201, 184, 255, 0.6); }
+.status { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.68rem; color: var(--panel-muted); }
+.status b { color: var(--panel-fg); font-weight: 400; }
+.pips { display: flex; gap: 6px; align-items: center; }
+.pips i { width: 7px; height: 7px; border-radius: 50%; background: var(--line-2); }
+.pips i.on { background: var(--gold); box-shadow: 0 0 8px rgba(243, 212, 139, 0.9); }
+
+/* ---------- Drawers ---------- */
+.drawer {
+  position: fixed; z-index: 7; top: 0; right: 0; bottom: 0;
+  width: min(380px, 100%);
+  padding-top: calc(22px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  padding-left: 24px;
+  padding-right: max(24px, env(safe-area-inset-right, 0px));
+  background: var(--panel-strong); border-left: 1px solid var(--line-2);
+  backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
+  transform: translateX(105%); transition: transform .4s cubic-bezier(.2, .8, .2, 1);
+  overflow-y: auto; display: flex; flex-direction: column; gap: 18px;
+}
+.drawer.open { transform: translateX(0); }
+.drawer-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.drawer h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 2.1rem; line-height: 1; }
+.drawer h2 em { color: var(--accent); }
+.drawer h3 { margin: 6px 0 0; font-size: 0.68rem; font-weight: 400; color: var(--panel-muted); }
+.close { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line-2); background: transparent; font-size: 1.3rem; line-height: 1; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stat { border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.stat b { font-family: var(--serif); font-weight: 400; font-size: 2.1rem; line-height: 1; color: var(--gold); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.62rem; color: var(--panel-muted); line-height: 1.4; }
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.day { display: flex; flex-direction: column; align-items: center; gap: 6px; font-family: var(--mono); font-size: 0.7rem; color: var(--panel-muted); }
+.day svg { width: 100%; max-width: 36px; height: auto; }
+.day .m { fill: rgba(201, 184, 255, 0.14); }
+.day.some .m { fill: var(--aurora); opacity: 0.8; }
+.day.top .m { fill: var(--gold); filter: drop-shadow(0 0 6px rgba(243, 212, 139, 0.8)); }
+.day.today span { color: var(--panel-fg); }
+.log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.log li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 11px 12px; border-radius: 14px; border: 1px solid var(--line); }
+.log li .n { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--gold); color: var(--gold); display: grid; place-items: center; font-family: var(--mono); font-size: 0.72rem; }
+.log li .s { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log li .meta { font-family: var(--mono); font-size: 0.7rem; color: var(--panel-muted); font-variant-numeric: tabular-nums; text-align: right; line-height: 1.5; }
+.empty { padding: 16px; border-radius: 14px; border: 1px dashed var(--line-2); color: var(--panel-muted); line-height: 1.55; }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field > label { font-weight: 600; }
+.field input[type="text"] { height: 46px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line-2); background: rgba(255, 255, 255, 0.04); font-size: 16px; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { min-width: 50px; height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-2); background: transparent; font-family: var(--mono); font-size: 0.8rem; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); box-shadow: 0 0 16px rgba(201, 184, 255, 0.4); }
+.hint { font-size: 0.86rem; color: var(--panel-muted); line-height: 1.55; }
+.danger { align-self: flex-start; border: 1px solid var(--line-2); background: transparent; height: 40px; padding: 0 14px; border-radius: 999px; font-weight: 600; color: var(--panel-muted); }
+.custom-row { display: flex; align-items: center; gap: 10px; }
+.custom-row input { width: 96px; height: 42px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line-2); background: rgba(255, 255, 255, 0.04); font-size: 16px; font-family: var(--mono); }
+.custom-row input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(201, 184, 255, 0.15); }
+.confirm-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ---------- Toast ---------- */
+#toast {
+  position: fixed; z-index: 9; left: 50%; top: calc(84px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
+  padding: 11px 18px; border-radius: 999px; background: var(--panel-strong); border: 1px solid var(--line-2);
+  font-weight: 600; box-shadow: 0 0 30px rgba(201, 184, 255, 0.2); transition: opacity .3s ease;
+  max-width: calc(100% - 32px); text-align: center;
+}
+#toast.hide { opacity: 0; pointer-events: none; }
+
+/* falling sparkles on summit */
+.confetti { position: fixed; z-index: 8; top: -20px; width: 6px; height: 6px; border-radius: 50%; pointer-events: none; animation: fall var(--f, 3s) linear forwards; }
+@keyframes fall { to { transform: translate(var(--x, 0px), 110vh); opacity: 0.2; } }
+
+
+/* ---------- Radio ---------- */
+.radio {
+  position: fixed; z-index: 8;
+  top: calc(72px + env(safe-area-inset-top, 0px));
+  right: max(18px, env(safe-area-inset-right, 0px));
+  width: min(360px, calc(100% - 36px));
+  max-height: calc(100% - 96px - env(safe-area-inset-top, 0px)); overflow-y: auto;
+  padding: 18px; border-radius: 22px;
+  background: var(--panel-strong); border: 1px solid var(--line-2);
+  backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+  box-shadow: 0 0 40px rgba(201, 184, 255, 0.18), 0 24px 60px rgba(0, 0, 0, 0.5);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.radio-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.radio h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 1.8rem; line-height: 1; }
+.radio h2 em { color: var(--accent); }
+.btn.small { height: 40px; padding: 0 16px; font-size: 0.9rem; flex: none; }
+.stations { display: flex; flex-direction: column; gap: 6px; }
+.station {
+  display: grid; grid-template-columns: 22px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; row-gap: 2px;
+  text-align: left; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: transparent;
+}
+.station .eq { grid-row: 1 / 3; align-self: center; display: inline-flex; gap: 2px; align-items: flex-end; height: 14px; }
+.station .eq b { width: 3px; height: 100%; background: var(--panel-muted); border-radius: 2px; transform-origin: bottom; transform: scaleY(0.35); }
+.station .st-name { font-weight: 600; }
+.station .st-mood { font-size: 0.82rem; color: var(--panel-muted); }
+.station[aria-pressed="true"] { border-color: var(--accent); background: rgba(201, 184, 255, 0.08); }
+.station[aria-pressed="true"] .eq b { background: var(--accent); }
+.station.live .eq b { animation: eqb 0.9s ease-in-out infinite alternate; }
+.station.live .eq b:nth-child(2) { animation-delay: -0.3s; }
+.station.live .eq b:nth-child(3) { animation-delay: -0.6s; }
+@keyframes eqb { from { transform: scaleY(0.25); } to { transform: scaleY(1); } }
+.amb { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.amb .label, .vol .label { font-size: 0.68rem; color: var(--panel-muted); }
+.amb-btns { display: flex; gap: 6px; }
+.chip { height: 38px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line-2); background: transparent; font-weight: 600; }
+.chip[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 16px rgba(243, 212, 139, 0.3); }
+.vol { display: flex; align-items: center; gap: 12px; }
+.vol input { flex: 1; min-width: 0; accent-color: var(--accent); height: 32px; }
+
+/* ---------- Focus mode ---------- */
+.exit-focus {
+  display: none; position: fixed; z-index: 6;
+  top: calc(16px + env(safe-area-inset-top, 0px)); right: max(18px, env(safe-area-inset-right, 0px));
+  height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel);
+  color: var(--panel-muted); font-weight: 600; opacity: 0.6; transition: opacity .2s ease;
+}
+.exit-focus:hover, .exit-focus:focus-visible { opacity: 1; }
+.focus-subject { display: none; margin: 0; font-family: var(--serif); font-style: italic; font-size: 1.15rem; color: var(--panel-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.focus-mode .topbar { display: none; }
+body.focus-mode .exit-focus { display: inline-flex; align-items: center; }
+body.focus-mode .timer .modes, body.focus-mode .timer .subject, body.focus-mode .timer .status, body.focus-mode #resetBtn { display: none; }
+body.focus-mode .focus-subject:not(:empty) { display: block; }
+body.focus-mode .timer { background: rgba(13, 13, 34, 0.35); border-color: var(--line); box-shadow: none; width: auto; min-width: 260px; }
+body.focus-mode .time { font-size: clamp(4.8rem, 12vw, 6.4rem); }
+body.focus-mode .btn.primary { flex: none; padding: 0 28px; }
+
+/* Tall screens (iPad held upright): the sky is empty up top, so the timer moves there and the trail stays in view */
+@media (orientation: portrait) {
+  .timer { bottom: auto; top: calc(88px + env(safe-area-inset-top, 0px)); }
+}
+@media (max-width: 640px) {
+  .iconbtn .txt { display: none; }
+  .iconbtn { padding: 0 12px; }
+  .timer { padding: 16px; gap: 12px; }
+  .brand b { font-size: 1.4rem; }
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  .timer { gap: 10px; padding: 14px; }
+  .subject { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .station.live .eq b,
+  .star, .drift, .aurora path, #nimbu .float, #nimbu .wing, #nimbu .dancer, #nimbu .zzz text, #nimbu .aura { animation: none !important; }
+  #nimbuMove { transition: none; }
+  .confetti { display: none; }
+}
+</style>
+</head>
+<body>
+<svg id="scene" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop id="skyTop" offset="0" stop-color="#05061a"/>
+      <stop id="skyMid" offset="0.6" stop-color="#0d1033"/>
+      <stop id="skyBot" offset="1" stop-color="#241a4a"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#e9e2ff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#e9e2ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mountGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop id="mTop" offset="0" stop-color="#191a3d"/>
+      <stop id="mBot" offset="1" stop-color="#0b0c22"/>
+    </linearGradient>
+    <linearGradient id="aur1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8ff0d0" stop-opacity="0"/>
+      <stop offset="0.35" stop-color="#8ff0d0" stop-opacity="0.55"/>
+      <stop offset="0.7" stop-color="#9fb8ff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#c9b8ff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="aur2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c9b8ff" stop-opacity="0"/>
+      <stop offset="0.4" stop-color="#c9b8ff" stop-opacity="0.45"/>
+      <stop offset="0.8" stop-color="#f2b8d4" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#f2b8d4" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="mistGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c9b8ff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#c9b8ff" stop-opacity="0.16"/>
+    </linearGradient>
+    <radialGradient id="novaBody" cx="0.4" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#f2fffa"/>
+      <stop offset="0.55" stop-color="#a6f3da"/>
+      <stop offset="1" stop-color="#6cc8c0"/>
+    </radialGradient>
+    <radialGradient id="novaAura" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#8ff0d0" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#8ff0d0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wingGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e6ddff" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#9fb8ff" stop-opacity="0.35"/>
+    </linearGradient>
+    <filter id="blurBig" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="22"/></filter>
+    <filter id="blurSoft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2"/></filter>
+    <filter id="glowStar" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <g id="aurora" class="aurora" filter="url(#blurBig)">
+    <path d="M-100 210 C200 120 420 260 700 170 S1200 90 1700 190 L1700 260 C1300 170 1100 300 720 250 S220 230 -100 290 Z" fill="url(#aur1)" style="--s:16s"/>
+    <path d="M-100 140 C260 80 520 190 820 120 S1300 60 1700 120 L1700 170 C1320 110 1050 230 820 180 S300 140 -100 200 Z" fill="url(#aur2)" style="--s:22s"/>
+    <path d="M200 300 C480 250 700 330 1000 280 S1400 250 1700 300 L1700 340 C1400 300 1100 370 900 340 S420 320 200 350 Z" fill="url(#aur1)" opacity="0.6" style="--s:19s"/>
+  </g>
+  <g id="stars"></g>
+  <g id="sunGroup">
+    <circle id="glow" r="130" fill="url(#sunGlow)"/>
+    <circle id="sun" r="30" fill="#ffd9c7" opacity="0.9"/>
+    <g id="moon"><circle r="30" fill="#f1ecff"/><circle cx="12" cy="-7" r="27" id="moonCut" fill="#05061a"/></g>
+  </g>
+  <g id="clouds"></g>
+  <path id="far2" d="M0 640 L120 560 L240 600 L380 470 L520 560 L640 500 L760 590 L900 480 L1040 560 L1180 440 L1320 540 L1460 470 L1600 560 L1600 900 L0 900 Z" fill="#1c1f4a" stroke="#c9b8ff" stroke-opacity="0.12" stroke-width="1.5"/>
+  <path id="far1" d="M0 700 L160 610 L300 660 L420 580 L560 680 L700 640 L1240 650 L1360 590 L1480 640 L1600 610 L1600 900 L0 900 Z" fill="#15173a" stroke="#c9b8ff" stroke-opacity="0.16" stroke-width="1.5"/>
+  <rect x="0" y="560" width="1600" height="200" fill="url(#mistGrad)"/>
+  <path id="mount" d="M260 900 L520 600 L640 560 L760 420 L860 330 L1000 170 L1110 300 L1200 360 L1320 520 L1460 640 L1600 760 L1600 900 Z" fill="url(#mountGrad)"/>
+  <path d="M260 900 L520 600 L640 560 L760 420 L860 330 L1000 170 L1110 300 L1200 360 L1320 520 L1460 640 L1600 760" fill="none" stroke="#c9b8ff" stroke-opacity="0.35" stroke-width="2" filter="url(#blurSoft)"/>
+  <path id="ridge" d="M1000 170 L1060 290 L1040 420 L1100 560 L1080 700 L1140 900 L1600 900 L1600 760 L1460 640 L1320 520 L1200 360 L1110 300 Z" fill="#000" opacity="0.22"/>
+  <path id="snow" d="M1000 170 L939 240 L962 236 L984 258 L1008 233 L1034 252 L1059 240 Z" fill="#dcd4ff" opacity="0.85"/>
+  <path id="trailPath" class="trail" d="M600 730 L880 690 L660 600 L920 540 L790 455 L960 385 L905 300 L1000 190"/>
+  <path id="trailDone" class="trail-done" d="M600 730 L880 690 L660 600 L920 540 L790 455 L960 385 L905 300 L1000 190"/>
+  <g id="camps"></g>
+  <rect x="0" y="720" width="1600" height="180" fill="url(#mistGrad)"/>
+  <path id="hills" d="M0 800 Q200 740 420 790 T860 800 T1300 780 T1600 790 L1600 900 L0 900 Z" fill="#090a1c"/>
+  <g id="pines"></g>
+
+  <!-- Nova: a little alien-fairy on a cloud -->
+  <g id="nimbuMove">
+    <g id="nimbu" data-mood="idle" role="button" aria-label="Nova">
+      <g class="float">
+        <circle class="aura" cx="0" cy="2" r="58" fill="url(#novaAura)"/>
+        <!-- cloud -->
+        <g fill="#e4defb" opacity="0.92" filter="url(#blurSoft)">
+          <ellipse cx="0" cy="33" rx="46" ry="12"/>
+          <circle cx="-26" cy="28" r="13"/>
+          <circle cx="-6" cy="23" r="17"/>
+          <circle cx="16" cy="25" r="15"/>
+          <circle cx="32" cy="30" r="11"/>
+        </g>
+        <g class="dancer">
+          <!-- wings -->
+          <path class="wing l" d="M-12 -6 C-40 -34 -48 -4 -32 6 C-24 10 -16 4 -12 -2 Z" fill="url(#wingGrad)" stroke="#ffffff" stroke-opacity="0.7" stroke-width="1"/>
+          <path class="wing r" d="M12 -6 C40 -34 48 -4 32 6 C24 10 16 4 12 -2 Z" fill="url(#wingGrad)" stroke="#ffffff" stroke-opacity="0.7" stroke-width="1"/>
+          <!-- antennae -->
+          <path d="M-7 -19 Q-11 -31 -15 -37" stroke="#a6f3da" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M7 -19 Q11 -31 15 -37" stroke="#a6f3da" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle cx="-15" cy="-39" r="3.2" fill="#f3d48b" filter="url(#glowStar)"/>
+          <circle cx="15" cy="-39" r="3.2" fill="#f3d48b" filter="url(#glowStar)"/>
+          <!-- body -->
+          <ellipse cx="0" cy="0" rx="21" ry="20" fill="url(#novaBody)"/>
+          <ellipse cx="-7" cy="-10" rx="6" ry="3" fill="#ffffff" opacity="0.55"/>
+          <ellipse cx="-13" cy="5" rx="4" ry="2.2" fill="#f2b8d4" opacity="0.5"/>
+          <ellipse cx="13" cy="5" rx="4" ry="2.2" fill="#f2b8d4" opacity="0.5"/>
+          <!-- eyes -->
+          <g class="eyes-open">
+            <ellipse cx="-6.5" cy="-2" rx="3.4" ry="4.8" fill="#1a1433"/>
+            <ellipse cx="6.5" cy="-2" rx="3.4" ry="4.8" fill="#1a1433"/>
+            <circle cx="-5.4" cy="-3.8" r="1.2" fill="#ffffff"/>
+            <circle cx="7.6" cy="-3.8" r="1.2" fill="#ffffff"/>
+          </g>
+          <g class="eyes-closed" stroke="#1a1433" stroke-width="2" fill="none" stroke-linecap="round">
+            <path d="M-10 -1 Q-6.5 2 -3 -1"/><path d="M3 -1 Q6.5 2 10 -1"/>
+          </g>
+          <g class="eyes-happy" stroke="#1a1433" stroke-width="2.2" fill="none" stroke-linecap="round">
+            <path d="M-10 0 Q-6.5 -6 -3 0"/><path d="M3 0 Q6.5 -6 10 0"/>
+          </g>
+          <path d="M-3 7 Q0 9.5 3 7" stroke="#1a1433" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+          <!-- tiny book while focusing -->
+          <g class="book">
+            <path d="M-11 11 L0 14 L11 11 L11 21 L0 24 L-11 21 Z" fill="#f1ecff" stroke="#c9b8ff" stroke-width="1"/>
+            <path d="M0 14 L0 24" stroke="#c9b8ff" stroke-width="1"/>
+          </g>
+          <!-- cool shades for summit days -->
+          <g class="shades">
+            <path d="M-13 -6 h10 v5 q-5 4 -10 0 Z" fill="#120f2a"/>
+            <path d="M3 -6 h10 v5 q-5 4 -10 0 Z" fill="#120f2a"/>
+            <path d="M-3 -4.5 h6" stroke="#120f2a" stroke-width="1.6"/>
+            <path d="M-11 -4.5 l3 0" stroke="#c9b8ff" stroke-width="1.2"/>
+            <path d="M5 -4.5 l3 0" stroke="#c9b8ff" stroke-width="1.2"/>
+          </g>
+          <g class="zzz"><text x="18" y="-22">z</text><text x="28" y="-34">z</text></g>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>
+
+<header class="topbar">
+  <div class="brand"><b>Nova's <em>Climb</em></b><span id="dateLabel">Today</span></div>
+  <div class="tools">
+    <button class="iconbtn" id="focusBtn" type="button" aria-pressed="false" aria-label="Focus mode (F)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><span class="txt">Focus</span>
+    </button>
+    <button class="iconbtn" id="musicBtn" type="button" aria-pressed="false" aria-expanded="false" aria-controls="radio" aria-label="Radio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span class="txt">Radio</span>
+    </button>
+    <button class="iconbtn" id="journalBtn" type="button" aria-label="Open trail journal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M8 7h7M8 11h5"/></svg><span class="txt">Journal</span>
+    </button>
+    <button class="iconbtn" id="settingsBtn" type="button" aria-label="Open settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="txt">Settings</span>
+    </button>
+  </div>
+</header>
+
+<section class="radio" id="radio" hidden aria-label="Radio">
+  <div class="radio-head"><h2>Nova <em>radio</em></h2><button class="btn primary small" id="radioPlay" type="button" aria-pressed="false">Play music</button></div>
+  <div class="stations" role="group" aria-label="Stations">
+    <button class="station" type="button" data-id="midnight"><span class="eq" aria-hidden="true"><b></b><b></b><b></b></span><span class="st-name">Midnight Pages</span><span class="st-mood">Lo-fi beats, music box, vinyl</span></button>
+    <button class="station" type="button" data-id="rainy"><span class="eq" aria-hidden="true"><b></b><b></b><b></b></span><span class="st-name">Rainy Window</span><span class="st-mood">Slow keys, soft and sleepy</span></button>
+    <button class="station" type="button" data-id="campfire"><span class="eq" aria-hidden="true"><b></b><b></b><b></b></span><span class="st-name">Campfire</span><span class="st-mood">Plucked strings by the fire</span></button>
+    <button class="station" type="button" data-id="aurora"><span class="eq" aria-hidden="true"><b></b><b></b><b></b></span><span class="st-name">Aurora</span><span class="st-mood">Floating pads, no drums</span></button>
+  </div>
+  <div class="amb">
+    <span class="label">Ambience</span>
+    <div class="amb-btns"><button class="chip" id="rainBtn" type="button" aria-pressed="false">Rain</button><button class="chip" id="fireBtn" type="button" aria-pressed="false">Fire</button></div>
+  </div>
+  <label class="vol"><span class="label">Volume</span><input type="range" id="volume" min="0" max="100" value="90"></label>
+  <p class="hint">Every sound here is made live by the app. Mix rain or fire with any station, or play them on their own.</p>
+</section>
+
+<button class="exit-focus" id="exitFocus" type="button">Exit focus</button>
+
+<div id="bubble" class="hide" role="status" aria-live="polite"></div>
+<div id="toast" class="hide" role="status" aria-live="polite"></div>
+
+<section class="timer" aria-label="Focus timer">
+  <div class="modes" role="group" aria-label="Timer mode">
+    <button type="button" id="modeFocus" aria-pressed="true">Focus</button>
+    <button type="button" id="modeBreak" aria-pressed="false">Break</button>
+  </div>
+  <div class="subject">
+    <label for="subjectInput">What are we studying?</label>
+    <input id="subjectInput" type="text" maxlength="40" placeholder="e.g. Chapter 4 revision" autocomplete="off">
+  </div>
+  <p class="focus-subject" id="focusSubject"></p>
+  <div class="clock">
+    <div class="time" id="time">25:00</div>
+    <svg class="ring" viewBox="0 0 54 54" aria-hidden="true"><circle class="bg" cx="27" cy="27" r="23"/><circle class="fg" id="ringFg" cx="27" cy="27" r="23" stroke-dasharray="144.5" stroke-dashoffset="144.5"/></svg>
+  </div>
+  <div class="controls">
+    <button class="btn primary" id="startBtn" type="button">Start climbing</button>
+    <button class="btn" id="resetBtn" type="button" aria-label="Reset timer">Reset</button>
+  </div>
+  <div class="status">
+    <span id="sessionLabel">Session 1 of 4</span>
+    <span class="pips" id="pips" aria-hidden="true"></span>
+  </div>
+</section>
+
+<aside class="drawer" id="journal" aria-label="Trail journal" aria-hidden="true">
+  <div class="drawer-head"><h2>Trail <em>journal</em></h2><button class="close" type="button" data-close="journal" aria-label="Close journal">×</button></div>
+  <div class="stats">
+    <div class="stat"><b id="statMin">0</b><span>minutes today</span></div>
+    <div class="stat"><b id="statSess">0</b><span>sessions today</span></div>
+    <div class="stat"><b id="statStreak">0</b><span>day streak</span></div>
+  </div>
+  <h3>This week</h3>
+  <div class="week" id="week"></div>
+  <h3>Today's climb</h3>
+  <ul class="log" id="log"></ul>
+  <p class="hint">Glowing peaks mean you studied that day. Gold peaks mean you reached the summit.</p>
+</aside>
+
+<aside class="drawer" id="settings" aria-label="Settings" aria-hidden="true">
+  <div class="drawer-head"><h2>Settings</h2><button class="close" type="button" data-close="settings" aria-label="Close settings">×</button></div>
+  <div class="field">
+    <label for="nameInput">Companion's name</label>
+    <input id="nameInput" type="text" maxlength="16" autocomplete="off">
+  </div>
+  <div class="field">
+    <label>Focus length</label>
+    <div class="seg" id="focusSeg" data-key="focusMin"><button type="button" data-v="15">15</button><button type="button" data-v="25">25</button><button type="button" data-v="45">45</button><button type="button" data-v="60">60</button><button type="button" data-custom="1">Custom</button></div>
+    <div class="custom-row" id="focusMinCustom" hidden><input type="number" id="focusMinInput" min="5" max="180" step="1" inputmode="numeric" aria-label="Custom minutes (5 to 180)"><span class="hint">minutes (5 to 180)</span></div>
+    <span class="hint">Minutes per focus session.</span>
+  </div>
+  <div class="field">
+    <label>Break length</label>
+    <div class="seg" id="breakSeg" data-key="breakMin"><button type="button" data-v="5">5</button><button type="button" data-v="10">10</button><button type="button" data-v="15">15</button><button type="button" data-custom="1">Custom</button></div>
+    <div class="custom-row" id="breakMinCustom" hidden><input type="number" id="breakMinInput" min="1" max="60" step="1" inputmode="numeric" aria-label="Custom minutes (1 to 60)"><span class="hint">minutes (1 to 60)</span></div>
+  </div>
+  <div class="field">
+    <label>Daily goal</label>
+    <div class="seg" id="goalSeg" data-key="goal"><button type="button" data-v="1">1</button><button type="button" data-v="2">2</button><button type="button" data-v="3">3</button><button type="button" data-v="4">4</button><button type="button" data-v="6">6</button><button type="button" data-custom="1">Custom</button></div>
+    <div class="custom-row" id="goalCustom" hidden><input type="number" id="goalInput" min="1" max="12" step="1" inputmode="numeric" aria-label="Custom sessions (1 to 12)"><span class="hint">sessions (1 to 12)</span></div>
+    <span class="hint">Focus sessions it takes to reach the summit. Each one sets up a camp on the way.</span>
+  </div>
+  <div class="field">
+    <label>Sound</label>
+    <div class="seg" id="chimeSeg" data-key="chime"><button type="button" data-v="1">Chime on</button><button type="button" data-v="0">Chime off</button></div>
+  </div>
+  <div class="field">
+    <label>Start over</label>
+    <div class="confirm-row" id="clearRow">
+      <button class="danger" id="clearBtn" type="button">Clear today's climb</button>
+    </div>
+    <span class="hint">Your journal is saved in this browser only.</span>
+  </div>
+</aside>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------- Storage (this browser only) ----------
+  var KEY = "nimbu-climb-v1";
+  var data = { settings: { name: "Nova", focusMin: 25, breakMin: 5, goal: 2, chime: 1, v: 2 }, log: {}, timer: null, summits: {} };
+  try { var raw = localStorage.getItem(KEY); if (raw) { var p = JSON.parse(raw); data.settings = Object.assign(data.settings, p.settings || {}); data.log = p.log || {}; data.timer = p.timer || null; data.summits = p.summits || {}; } } catch (e) {}
+  if (data.settings.name === "Nimbu") data.settings.name = "Nova";
+  try { var savedV = JSON.parse(localStorage.getItem(KEY) || "{}").settings; if (savedV && savedV.v !== 2) { data.settings.goal = 2; data.settings.v = 2; } } catch (e) {} // two sessions a day is the new default
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
+  function dayKey(d) { d = d || new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function today() { return data.log[dayKey()] || []; }
+  var S = data.settings;
+
+  // ---------- Personality ----------
+  var LINES = {
+    hello: ["Oh! Hi! I was definitely not napping.", "Ready when you are. I've been ready for hours. Mostly asleep, but ready.", "Today I am a world-famous mountaineer. Tomorrow, maybe a novelist.", "I packed snacks. They're imaginary, but they're delicious."],
+    start: ["Shh. Serious climbing face on.", "Onward! To the snacks at the summit!", "I'll guard your focus. Nothing gets past me. Except maybe butterflies.", "Adventure mode: activated.", "Let's go. I've stretched both wings."],
+    focus: ["You're doing great. I'm doing great. We're great.", "Writing my memoir: 'Chapter 1. She studied. I supervised.'", "I believe in you an unreasonable amount.", "Halfway there. I can smell the summit cookies.", "Quiet climbing is my favourite kind of climbing.", "Tiny steps still count as steps."],
+    done: ["WE DID IT. Happy dance time!", "Camp reached! Victory wiggle!", "That was heroic. I'll tell the other clouds.", "One more camp on the map. Dance break!"],
+    breakStart: ["Snack break! I brought imaginary cookies.", "Stretch your legs. I'll stretch my wings.", "Drink some water. I'll drink some cloud.", "Rest is part of the climb. Very official mountaineer rule."],
+    breakDone: ["Break's over. Back to the trail, captain.", "Refreshed? I'm refreshed. Let's climb."],
+    pause: ["Taking five? I'll hold the rope.", "Paused. I'll just float here dramatically."],
+    summit: ["SUMMIT! I'm putting this in my memoir.", "We're on top of the world. Well, this world.", "Look at the view! Look at US!"],
+    poke: ["Hehe. That tickles.", "Did you know clouds are just very relaxed puddles?", "I'm not short. I'm fun-sized.", "Boop received. Returning boop.", "I'm a little alien. And a little fairy. And a lot of fun.", "If I had a hat, I'd tip it."],
+    late: ["It's late. Even mountains go to sleep.", "Night climb! Very dramatic. Very brave."],
+    wake: ["Zzz... oh! You're back! I was guarding the trail with my eyes closed."]
+  };
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  // ---------- Scene setup ----------
+  var svgNS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, parent) { var n = document.createElementNS(svgNS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; }
+  var starG = $("stars");
+  for (var i = 0; i < 110; i++) {
+    var c = el("circle", { cx: Math.random() * 1600, cy: Math.random() * 520, r: Math.random() < 0.12 ? 2.2 : 1 + Math.random() * 0.8, fill: "#ffffff", "class": "star" }, starG);
+    c.style.setProperty("--t", (2 + Math.random() * 3).toFixed(1) + "s");
+    c.style.animationDelay = (-Math.random() * 4).toFixed(1) + "s";
+  }
+  var cloudG = $("clouds");
+  [[180, 120, 1.1, 140], [80, 260, 0.8, 190], [140, 380, 0.6, 240]].forEach(function (cfg, k) {
+    var g = el("g", { "class": "drift" }, cloudG);
+    g.style.setProperty("--d", cfg[3] + "s"); g.style.animationDelay = (-cfg[3] * (0.2 + k * 0.3)) + "s";
+    var inner = el("g", { transform: "translate(" + cfg[0] + " " + cfg[1] + ") scale(" + cfg[2] + ")", fill: "#c9b8ff", opacity: "0.3", "class": "skycloud", filter: "url(#blurSoft)" }, g);
+    el("ellipse", { cx: 0, cy: 0, rx: 70, ry: 18 }, inner); el("circle", { cx: -24, cy: -10, r: 22 }, inner); el("circle", { cx: 12, cy: -16, r: 26 }, inner); el("circle", { cx: 40, cy: -6, r: 16 }, inner);
+  });
+  var pineG = $("pines");
+  [[90, 820, 1], [150, 836, 0.8], [1380, 812, 1.1], [1460, 826, 0.85], [1530, 818, 1], [330, 812, 0.7], [1240, 832, 0.75]].forEach(function (p) {
+    var g = el("g", { transform: "translate(" + p[0] + " " + p[1] + ") scale(" + p[2] + ")" }, pineG);
+    el("path", { d: "M0 -70 L26 -20 L14 -20 L32 10 L-32 10 L-14 -20 L-26 -20 Z", "class": "pine" }, g);
+    el("rect", { x: -3, y: 10, width: 6, height: 10, "class": "pine" }, g);
+  });
+
+  var trail = $("trailPath"), trailDone = $("trailDone");
+  var trailLen = trail.getTotalLength();
+
+  function drawCamps() {
+    var g = $("camps"); g.innerHTML = "";
+    for (var k = 1; k <= S.goal; k++) {
+      var pt = trail.getPointAtLength(trailLen * k / S.goal);
+      var cg = el("g", { "class": "camp" + (k === S.goal ? " summit" : ""), transform: "translate(" + pt.x + " " + pt.y + ")", "data-k": k }, g);
+      if (k === S.goal) {
+        el("line", { "class": "pole", x1: 0, y1: 0, x2: 0, y2: -40 }, cg);
+        el("path", { "class": "flag", d: "M0 -40 L24 -33 L0 -26 Z" }, cg);
+      } else {
+        el("line", { "class": "pole", x1: 0, y1: 0, x2: 0, y2: -16 }, cg);
+        el("circle", { "class": "lantern", cx: 0, cy: -20, r: 5 }, cg);
+      }
+    }
+  }
+
+  // ---------- Time-of-day palette ----------
+  var KEYS = [
+    { h: 0,    top: "#05061a", mid: "#0d1033", bot: "#241a4a", mTop: "#191a3d", mBot: "#0b0c22", far1: "#15173a", far2: "#1c1f4a", hills: "#090a1c", pine: "#06071a", night: 1, aur: 1 },
+    { h: 5,    top: "#0b0d2e", mid: "#24205a", bot: "#6b3f74", mTop: "#211f4a", mBot: "#10102c", far1: "#24224f", far2: "#2e2a60", hills: "#0e0d26", pine: "#09091e", night: 0.85, aur: 0.6 },
+    { h: 6.5,  top: "#1c2266", mid: "#5b3e8a", bot: "#e08a8a", mTop: "#2a2856", mBot: "#15153a", far1: "#3a3270", far2: "#4a3c80", hills: "#121232", pine: "#0c0c26", night: 0.45, aur: 0.2 },
+    { h: 9,    top: "#24306e", mid: "#4b56a0", bot: "#9a8cc4", mTop: "#262a5e", mBot: "#141739", far1: "#343a78", far2: "#424a8c", hills: "#121433", pine: "#0b0c26", night: 0.3, aur: 0.12 },
+    { h: 16,   top: "#24306e", mid: "#4b56a0", bot: "#9a8cc4", mTop: "#262a5e", mBot: "#141739", far1: "#343a78", far2: "#424a8c", hills: "#121433", pine: "#0b0c26", night: 0.3, aur: 0.12 },
+    { h: 18.3, top: "#1d1f5a", mid: "#6b3f86", bot: "#f0907a", mTop: "#2a2452", mBot: "#151335", far1: "#43326f", far2: "#5a3d7e", hills: "#130f2c", pine: "#0c0a22", night: 0.4, aur: 0.25 },
+    { h: 19.8, top: "#0b0d2e", mid: "#2a2160", bot: "#7a3f78", mTop: "#1e1c46", mBot: "#0f0e2a", far1: "#221f4e", far2: "#2c275e", hills: "#0c0b22", pine: "#08081c", night: 0.85, aur: 0.75 },
+    { h: 21.5, top: "#05061a", mid: "#0d1033", bot: "#241a4a", mTop: "#191a3d", mBot: "#0b0c22", far1: "#15173a", far2: "#1c1f4a", hills: "#090a1c", pine: "#06071a", night: 1, aur: 1 },
+    { h: 24,   top: "#05061a", mid: "#0d1033", bot: "#241a4a", mTop: "#191a3d", mBot: "#0b0c22", far1: "#15173a", far2: "#1c1f4a", hills: "#090a1c", pine: "#06071a", night: 1, aur: 1 }
+  ];
+  function hex(c) { return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]; }
+  function mix(a, b, t) { var A = hex(a), B = hex(b); return "rgb(" + A.map(function (v, i) { return Math.round(v + (B[i] - v) * t); }).join(",") + ")"; }
+  function paint() {
+    var now = new Date(), h = now.getHours() + now.getMinutes() / 60;
+    var a = KEYS[0], b = KEYS[1];
+    for (var k = 0; k < KEYS.length - 1; k++) { if (h >= KEYS[k].h && h <= KEYS[k + 1].h) { a = KEYS[k]; b = KEYS[k + 1]; break; } }
+    var t = (h - a.h) / (b.h - a.h || 1);
+    $("skyTop").setAttribute("stop-color", mix(a.top, b.top, t));
+    $("skyMid").setAttribute("stop-color", mix(a.mid, b.mid, t));
+    $("skyBot").setAttribute("stop-color", mix(a.bot, b.bot, t));
+    $("mTop").setAttribute("stop-color", mix(a.mTop, b.mTop, t));
+    $("mBot").setAttribute("stop-color", mix(a.mBot, b.mBot, t));
+    $("far1").setAttribute("fill", mix(a.far1, b.far1, t));
+    $("far2").setAttribute("fill", mix(a.far2, b.far2, t));
+    $("hills").setAttribute("fill", mix(a.hills, b.hills, t));
+    var pine = mix(a.pine, b.pine, t);
+    document.querySelectorAll(".pine").forEach(function (p) { p.setAttribute("fill", pine); });
+    $("moonCut").setAttribute("fill", mix(a.top, b.top, t));
+    var night = a.night + (b.night - a.night) * t;
+    starG.setAttribute("opacity", night.toFixed(2));
+    $("aurora").setAttribute("opacity", (a.aur + (b.aur - a.aur) * t).toFixed(2));
+    document.querySelectorAll(".skycloud").forEach(function (c) { c.setAttribute("opacity", (0.35 - night * 0.2).toFixed(2)); });
+    document.body.style.background = mix(a.top, b.top, t);
+    // sun by day, moon by night, on an arc across the sky
+    var isDay = h >= 6 && h < 19.5;
+    var f = isDay ? (h - 6) / 13.5 : ((h >= 19.5 ? h - 19.5 : h + 4.5) / 10.5);
+    var x = 160 + f * 1280, y = 420 - Math.sin(f * Math.PI) * 300;
+    $("sunGroup").setAttribute("transform", "translate(" + x.toFixed(0) + " " + y.toFixed(0) + ")");
+    $("sun").style.display = isDay ? "" : "none";
+    $("glow").setAttribute("opacity", isDay ? 1 : 0.35);
+    $("moon").style.display = isDay ? "none" : "";
+    $("dateLabel").textContent = now.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+  }
+
+  // ---------- Timer ----------
+  var T = data.timer || { mode: "focus", running: false, endAt: 0, remaining: S.focusMin * 60000, total: S.focusMin * 60000, subject: "" };
+  data.timer = T;
+  $("subjectInput").value = T.subject || "";
+  function fmt(ms) { var s = Math.max(0, Math.ceil(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
+  function remaining() { return T.running ? T.endAt - Date.now() : T.remaining; }
+  function setMode(mode, quiet) {
+    T.mode = mode; T.running = false;
+    T.total = (mode === "focus" ? S.focusMin : S.breakMin) * 60000; T.remaining = T.total;
+    save(); render();
+    if (!quiet) setMood(mode === "break" ? "happy" : "idle");
+  }
+  var wakeLock = null;
+  function holdScreen(on) {
+    try {
+      if (on && navigator.wakeLock && !wakeLock) navigator.wakeLock.request("screen").then(function (l) { wakeLock = l; }, function () {});
+      if (!on && wakeLock) { wakeLock.release(); wakeLock = null; }
+    } catch (e) {}
+  }
+  function start() {
+    if (T.running) return;
+    T.running = true; T.endAt = Date.now() + T.remaining; T.subject = $("subjectInput").value.trim();
+    save(); render(); holdScreen(true); unlockAudio();
+    var h = new Date().getHours();
+    if (T.mode === "focus") { setMood("focus"); say(h >= 23 || h < 5 ? pick(LINES.late) : pick(LINES.start)); }
+    else { setMood("happy"); say(pick(LINES.breakStart)); }
+    lastNudge = Date.now();
+  }
+  function pause() {
+    if (!T.running) return;
+    T.remaining = Math.max(0, T.endAt - Date.now()); T.running = false;
+    save(); render(); holdScreen(false);
+    setMood("idle"); say(pick(LINES.pause));
+  }
+  function reset() { T.running = false; T.remaining = T.total; save(); render(); holdScreen(false); setMood("idle"); }
+  function finish() {
+    T.running = false; holdScreen(false);
+    if (T.mode === "focus") {
+      var list = today().slice();
+      list.push({ subject: T.subject || "Focus session", minutes: Math.round(T.total / 60000), at: Date.now() });
+      data.log[dayKey()] = list;
+      chime(true);
+      if (list.length === S.goal) {
+        data.summits[dayKey()] = true;
+        setMode("break", true); setMood("party"); say(pick(LINES.summit), 7000); confetti(); toast("Summit reached! " + list.length + " sessions today.");
+      } else {
+        setMode("break", true); setMood("happy"); say(pick(LINES.done), 6000);
+        toast("Camp " + list.length + " of " + S.goal + " reached. Time for a break.");
+      }
+    } else {
+      chime(false);
+      setMode("focus", true); setMood("idle"); say(pick(LINES.breakDone));
+    }
+    save(); render(); renderJournal();
+  }
+
+  // ---------- Rendering ----------
+  var lastDone = -1;
+  function progress() {
+    var done = today().length, p = done / S.goal;
+    if (T.mode === "focus" && T.total) p += (1 - remaining() / T.total) / S.goal * (T.running || T.remaining < T.total ? 1 : 0);
+    return Math.min(1, Math.max(0, p));
+  }
+  function placeNimbu() {
+    var p = progress();
+    var pt = trail.getPointAtLength(trailLen * p);
+    $("nimbuMove").setAttribute("transform", "translate(" + pt.x.toFixed(1) + " " + (pt.y - 40).toFixed(1) + ") scale(1)");
+    clipDone(p);
+    var done = today().length;
+    if (done !== lastDone) {
+      document.querySelectorAll(".camp").forEach(function (c) { c.classList.toggle("reached", +c.getAttribute("data-k") <= done); });
+      lastDone = done;
+    }
+  }
+  // show the gold trail only up to the current point, using a mask built from the same path
+  var maskPath = null;
+  function clipDone(p) {
+    if (!maskPath) {
+      var defs = document.querySelector("#scene defs");
+      var mask = el("mask", { id: "doneMask", maskUnits: "userSpaceOnUse", x: 0, y: 0, width: 1600, height: 900 }, defs);
+      maskPath = el("path", { d: trail.getAttribute("d"), fill: "none", stroke: "#ffffff", "stroke-width": 14, "stroke-linecap": "round", "stroke-linejoin": "round" }, mask);
+      trailDone.setAttribute("mask", "url(#doneMask)");
+    }
+    maskPath.setAttribute("stroke-dasharray", (trailLen * p).toFixed(1) + " " + (trailLen + 20).toFixed(1));
+  }
+  function render() {
+    var r = remaining();
+    $("time").textContent = fmt(r);
+    var frac = T.total ? 1 - r / T.total : 0;
+    $("ringFg").setAttribute("stroke-dashoffset", (144.5 * (1 - frac)).toFixed(1));
+    $("modeFocus").setAttribute("aria-pressed", T.mode === "focus");
+    $("modeBreak").setAttribute("aria-pressed", T.mode === "break");
+    var label = T.running ? "Pause" : (T.remaining < T.total ? "Keep going" : (T.mode === "focus" ? "Start climbing" : "Start break"));
+    $("startBtn").textContent = label;
+    var done = today().length;
+    $("sessionLabel").innerHTML = done >= S.goal ? "<b>Summit reached</b> · " + done + " sessions" : (T.mode === "focus" ? "Session <b>" + (done + 1) + "</b> of " + S.goal : "Break · " + done + " of " + S.goal + " done");
+    var pips = $("pips"); pips.innerHTML = "";
+    for (var k = 0; k < S.goal; k++) { var i = document.createElement("i"); if (k < done) i.className = "on"; pips.appendChild(i); }
+    if (!bubble.classList.contains("hide")) placeBubble();
+    document.title = T.running ? fmt(r) + " · " + (T.mode === "focus" ? "Focus" : "Break") + " · Nova's Climb" : "Nova's Climb";
+    placeNimbu();
+  }
+
+  // ---------- Nimbu mood + speech ----------
+  var nimbu = $("nimbu"), moodTimer = null;
+  function setMood(m, ms) {
+    nimbu.setAttribute("data-mood", m);
+    clearTimeout(moodTimer);
+    if (m === "happy" || m === "party") moodTimer = setTimeout(function () { nimbu.setAttribute("data-mood", T.running && T.mode === "focus" ? "focus" : "idle"); }, ms || 6000);
+  }
+  var bubble = $("bubble"), bubbleTimer = null;
+  function placeBubble() {
+    var r = nimbu.getBoundingClientRect();
+    var bw = bubble.offsetWidth, bh = bubble.offsetHeight;
+    var x = r.right - 6, y = r.top - bh + 6;
+    if (x + bw > window.innerWidth - 12) { x = r.left - bw + 6; bubble.style.borderRadius = "18px 18px 6px 18px"; } else bubble.style.borderRadius = "18px 18px 18px 6px";
+    x = Math.max(12, Math.min(x, window.innerWidth - bw - 12)); y = Math.max(70, y);
+    bubble.style.left = x + "px"; bubble.style.top = y + "px";
+  }
+  function say(text, ms) {
+    bubble.textContent = text;
+    bubble.classList.remove("hide");
+    placeBubble();
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(function () { bubble.classList.add("hide"); }, ms || 5000);
+  }
+  nimbu.addEventListener("click", function () {
+    lastActive = Date.now();
+    if (nimbu.getAttribute("data-mood") === "sleep") { setMood("idle"); say(pick(LINES.wake)); return; }
+    setMood("happy", 2200); say(pick(LINES.poke));
+  });
+
+  // ---------- Journal ----------
+  function renderJournal() {
+    var list = today(), mins = list.reduce(function (a, b) { return a + b.minutes; }, 0);
+    $("statMin").textContent = mins; $("statSess").textContent = list.length;
+    var streak = 0, d = new Date();
+    if (!(data.log[dayKey(d)] || []).length) d.setDate(d.getDate() - 1);
+    while ((data.log[dayKey(d)] || []).length) { streak++; d.setDate(d.getDate() - 1); }
+    $("statStreak").textContent = streak;
+    var week = $("week"); week.innerHTML = "";
+    for (var k = 6; k >= 0; k--) {
+      var dd = new Date(); dd.setDate(dd.getDate() - k);
+      var key = dayKey(dd), n = (data.log[key] || []).length;
+      var cell = document.createElement("div");
+      cell.className = "day" + (n ? " some" : "") + (data.summits[key] ? " top" : "") + (k === 0 ? " today" : "");
+      cell.innerHTML = '<svg viewBox="0 0 40 30"><path class="m" d="M2 28 L15 8 L21 16 L27 6 L38 28 Z"/></svg><span>' + dd.toLocaleDateString(undefined, { weekday: "narrow" }) + "</span>";
+      cell.title = dd.toLocaleDateString(undefined, { weekday: "long" }) + ": " + n + " session" + (n === 1 ? "" : "s");
+      week.appendChild(cell);
+    }
+    var ul = $("log"); ul.innerHTML = "";
+    if (!list.length) {
+      var li = document.createElement("li"); li.className = "empty"; li.style.display = "block";
+      li.textContent = "No camps yet today. Finish a focus session and it shows up here, with what you studied.";
+      ul.appendChild(li);
+    } else list.forEach(function (s, idx) {
+      var li = document.createElement("li");
+      var t = new Date(s.at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+      li.innerHTML = '<span class="n">' + (idx + 1) + '</span><span class="s"></span><span class="meta">' + s.minutes + " min<br>" + t + "</span>";
+      li.querySelector(".s").textContent = s.subject;
+      ul.appendChild(li);
+    });
+  }
+
+  // ---------- Drawers ----------
+  function openDrawer(id) {
+    ["journal", "settings"].forEach(function (d) { var o = d === id; $(d).classList.toggle("open", o); $(d).setAttribute("aria-hidden", o ? "false" : "true"); });
+    if (id === "journal") renderJournal();
+    if (id === "settings") syncSettings();
+  }
+  function closeDrawers() { openDrawer(null); }
+  $("journalBtn").addEventListener("click", function () { openDrawer($("journal").classList.contains("open") ? null : "journal"); });
+  $("settingsBtn").addEventListener("click", function () { openDrawer($("settings").classList.contains("open") ? null : "settings"); });
+  document.querySelectorAll("[data-close]").forEach(function (b) { b.addEventListener("click", closeDrawers); });
+
+  var LIMITS = { focusMin: [5, 180], breakMin: [1, 60], goal: [1, 12] };
+  function syncSettings() {
+    $("nameInput").value = S.name;
+    document.querySelectorAll(".seg").forEach(function (seg) {
+      var key = seg.getAttribute("data-key"), matched = false;
+      seg.querySelectorAll("button[data-v]").forEach(function (b) { var on = +b.getAttribute("data-v") === +S[key]; if (on) matched = true; b.setAttribute("aria-pressed", String(on)); });
+      var cb = seg.querySelector("[data-custom]");
+      if (cb) {
+        var row = $(key + "Custom"), open = !matched || row.getAttribute("data-open") === "1";
+        cb.setAttribute("aria-pressed", String(!matched));
+        row.hidden = !open;
+        if (document.activeElement !== $(key + "Input")) $(key + "Input").value = S[key];
+      }
+    });
+  }
+  function applySetting(key, v) {
+    if (LIMITS[key]) v = Math.min(LIMITS[key][1], Math.max(LIMITS[key][0], Math.round(v)));
+    S[key] = v; save(); syncSettings();
+    if (key === "goal") { drawCamps(); lastDone = -1; }
+    if ((key === "focusMin" && T.mode === "focus") || (key === "breakMin" && T.mode === "break")) { if (!T.running) setMode(T.mode, true); }
+    render();
+  }
+  document.querySelectorAll(".seg").forEach(function (seg) {
+    var key = seg.getAttribute("data-key");
+    seg.addEventListener("click", function (e) {
+      var b = e.target.closest("button"); if (!b) return;
+      var row = $(key + "Custom");
+      if (b.hasAttribute("data-custom")) {
+        row.setAttribute("data-open", "1"); row.hidden = false;
+        b.setAttribute("aria-pressed", "true");
+        $(key + "Input").value = S[key]; $(key + "Input").focus(); $(key + "Input").select();
+        return;
+      }
+      if (row) row.setAttribute("data-open", "0");
+      applySetting(key, +b.getAttribute("data-v"));
+    });
+    var input = $(key + "Input");
+    if (input) input.addEventListener("change", function () {
+      var v = parseInt(this.value, 10);
+      if (isNaN(v)) { this.value = S[key]; return; }
+      applySetting(key, v);
+      toast(key === "goal" ? "Daily goal set to " + S[key] + " session" + (S[key] === 1 ? "" : "s") + "." : (key === "focusMin" ? "Focus" : "Break") + " length set to " + S[key] + " min.");
+    });
+  });
+  $("nameInput").addEventListener("input", function () {
+    S.name = this.value.trim() || "Nova";
+    nimbu.setAttribute("aria-label", S.name); save();
+  });
+  function restoreClear() {
+    $("clearRow").innerHTML = '<button class="danger" id="clearBtn" type="button">Clear today\'s climb</button>';
+    bindClear();
+  }
+  function bindClear() {
+    $("clearBtn").onclick = function () {
+      var row = $("clearRow");
+      row.innerHTML = '<span class="hint">Clear all of today\'s sessions?</span><button class="danger" id="clearYes" type="button">Yes, clear</button><button class="danger" id="clearNo" type="button">Keep them</button>';
+      $("clearYes").onclick = function () { delete data.log[dayKey()]; delete data.summits[dayKey()]; save(); lastDone = -1; render(); renderJournal(); restoreClear(); toast("Today's climb cleared."); };
+      $("clearNo").onclick = restoreClear;
+    };
+  }
+
+  // ---------- Controls ----------
+  $("startBtn").addEventListener("click", function () { lastActive = Date.now(); T.running ? pause() : start(); });
+  $("resetBtn").addEventListener("click", function () { lastActive = Date.now(); reset(); });
+  $("modeFocus").addEventListener("click", function () { if (T.mode !== "focus") setMode("focus"); });
+  $("modeBreak").addEventListener("click", function () { if (T.mode !== "break") setMode("break"); });
+  $("subjectInput").addEventListener("input", function () { T.subject = this.value.trim(); save(); });
+  document.addEventListener("keydown", function (e) {
+    if (e.target.matches("input")) return;
+    if (e.code === "Space") { e.preventDefault(); T.running ? pause() : start(); }
+    if (e.key === "Escape") { closeDrawers(); openRadio(false); }
+  });
+
+  var toastTimer = null;
+  function toast(t) { var n = $("toast"); n.textContent = t; n.classList.remove("hide"); clearTimeout(toastTimer); toastTimer = setTimeout(function () { n.classList.add("hide"); }, 3500); }
+  function confetti() {
+    if (reduce) return;
+    var colors = ["#f3d48b", "#c9b8ff", "#f2b8d4", "#8ff0d0", "#ffffff"];
+    for (var k = 0; k < 70; k++) {
+      var c = document.createElement("i"); c.className = "confetti";
+      c.style.left = Math.random() * 100 + "vw"; c.style.background = colors[k % colors.length]; c.style.boxShadow = "0 0 8px " + colors[k % colors.length];
+      c.style.setProperty("--x", (Math.random() * 200 - 100) + "px"); c.style.setProperty("--f", (2.4 + Math.random() * 2) + "s");
+      c.style.animationDelay = (Math.random() * 0.8) + "s";
+      document.body.appendChild(c);
+      setTimeout(function (n) { return function () { n.remove(); }; }(c), 5500);
+    }
+  }
+
+  // ---------- Sound ----------
+  var ac = null;
+  function unlockAudio() {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!ac) ac = new AC();
+    if (ac.state === "suspended") ac.resume();
+    return ac;
+  }
+  function chime(big) {
+    if (!S.chime) return;
+    var a = unlockAudio(); if (!a) return;
+    var notes = big ? [72, 76, 79, 84] : [79, 76];
+    notes.forEach(function (m, k) {
+      var t = a.currentTime + k * 0.16, o = a.createOscillator(), g = a.createGain();
+      o.type = "sine"; o.frequency.value = 440 * Math.pow(2, (m - 69) / 12);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+      o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 1.7);
+    });
+  }
+
+  // ---------- Radio: four stations and two ambience sounds, all made in code (no audio files) ----------
+  var R = { ac: null, station: "midnight", playing: false, vol: 0.9, rain: false, fire: false, timer: null, next: 0, i: 0 };
+  try { var rs = JSON.parse(localStorage.getItem(KEY + "-radio") || "{}"); if (rs.station) R.station = rs.station; if (typeof rs.vol === "number") R.vol = rs.vol; } catch (e) {}
+  function saveRadio() { try { localStorage.setItem(KEY + "-radio", JSON.stringify({ station: R.station, vol: R.vol })); } catch (e) {} }
+  function hz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+
+  function ensureAudio() {
+    if (R.ac) return true;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+    var ac = R.ac = new AC();
+    // a gentle limiter keeps everything loud enough on small speakers without distorting
+    var comp = ac.createDynamicsCompressor(); comp.threshold.value = -20; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.005; comp.release.value = 0.25;
+    var makeup = ac.createGain(); makeup.gain.value = 1.7;
+    comp.connect(makeup); makeup.connect(ac.destination);
+    R.master = ac.createGain(); R.master.gain.value = R.vol; R.master.connect(comp);
+    R.music = ac.createGain(); R.music.gain.value = 0;
+    R.tone = ac.createBiquadFilter(); R.tone.type = "lowpass"; R.tone.frequency.value = 3200;
+    R.music.connect(R.tone); R.tone.connect(R.master);
+    R.echo = ac.createDelay(2); R.echoFb = ac.createGain(); R.echoFb.gain.value = 0.32;
+    var echoOut = ac.createGain(); echoOut.gain.value = 0.35;
+    R.echo.connect(R.echoFb); R.echoFb.connect(R.echo); R.echo.connect(echoOut); echoOut.connect(R.music);
+    // white noise for hats
+    R.noise = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+    var nd = R.noise.getChannelData(0); for (var i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+    // vinyl crackle, always under the music
+    var cb = ac.createBuffer(1, ac.sampleRate * 4, ac.sampleRate), cd = cb.getChannelData(0);
+    for (var j = 0; j < cd.length; j++) cd[j] = (Math.random() * 2 - 1) * 0.01 + (Math.random() < 0.0004 ? (Math.random() * 2 - 1) * 0.45 : 0);
+    loopBuffer(cb, R.music, 0.5, "highpass", 1200);
+    // rain: soft filtered hiss with scattered drops
+    var rb = ac.createBuffer(1, ac.sampleRate * 6, ac.sampleRate), rd = rb.getChannelData(0), last = 0;
+    for (var k = 0; k < rd.length; k++) {
+      var w = Math.random() * 2 - 1; last = 0.97 * last + 0.03 * w;
+      rd[k] = last * 0.9 + w * 0.06;
+      if (Math.random() < 0.0012) { var amp = 0.25 + Math.random() * 0.35; for (var q = 0; q < 220 && k + q < rd.length; q++) rd[k + q] += (Math.random() * 2 - 1) * amp * Math.exp(-q / 40); }
+    }
+    R.rainGain = loopBuffer(rb, R.master, 0, "lowpass", 5200);
+    // fire: deep rumble with crackles and pops
+    var fb = ac.createBuffer(1, ac.sampleRate * 7, ac.sampleRate), fd = fb.getChannelData(0), b = 0;
+    for (var f = 0; f < fd.length; f++) {
+      b = (b + 0.02 * (Math.random() * 2 - 1)) / 1.02; fd[f] = b * 2.4;
+      if (Math.random() < 0.0009) { var a2 = 0.3 + Math.random() * 0.6, len = 60 + Math.random() * 300; for (var z = 0; z < len && f + z < fd.length; z++) fd[f + z] += (Math.random() * 2 - 1) * a2 * Math.exp(-z / (len / 5)); }
+    }
+    R.fireGain = loopBuffer(fb, R.master, 0, "lowpass", 2600);
+    return true;
+  }
+  function loopBuffer(buf, dest, gain, ftype, freq) {
+    var s = R.ac.createBufferSource(); s.buffer = buf; s.loop = true;
+    var flt = R.ac.createBiquadFilter(); flt.type = ftype; flt.frequency.value = freq;
+    var g = R.ac.createGain(); g.gain.value = gain;
+    s.connect(flt); flt.connect(g); g.connect(dest); s.start();
+    return g;
+  }
+
+  // ---- instruments ----
+  function env(g, t, peak, attack, release) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + attack + release); }
+  function osc(type, m, t, dur, out) { var o = R.ac.createOscillator(); o.type = type; o.frequency.value = hz(m); o.connect(out); o.start(t); o.stop(t + dur); return o; }
+  function musicBox(t, m, vol) {
+    var g = R.ac.createGain(); env(g, t, vol, 0.01, 1.4); g.connect(R.music); g.connect(R.echo);
+    osc("sine", m, t, 1.5, g);
+    var h = R.ac.createGain(); h.gain.value = 0.18; h.connect(g); var o2 = R.ac.createOscillator(); o2.frequency.value = hz(m) * 2.01; o2.connect(h); o2.start(t); o2.stop(t + 1.5);
+  }
+  function keys(t, m, vol, dur) {          // soft electric piano with a little tremolo
+    var g = R.ac.createGain(); env(g, t, vol, 0.02, dur); g.connect(R.music); g.connect(R.echo);
+    var trem = R.ac.createOscillator(), tg = R.ac.createGain(); trem.frequency.value = 4.5; tg.gain.value = vol * 0.35; trem.connect(tg); tg.connect(g.gain); trem.start(t); trem.stop(t + dur + 0.1);
+    osc("sine", m, t, dur + 0.1, g);
+    var h = R.ac.createGain(); h.gain.value = 0.25; h.connect(g); osc("triangle", m + 12, t, dur + 0.1, h);
+  }
+  function pad(t, notes, dur, type, peak, cutoff) {
+    var flt = R.ac.createBiquadFilter(); flt.type = "lowpass"; flt.frequency.setValueAtTime(cutoff * 0.6, t); flt.frequency.linearRampToValueAtTime(cutoff, t + dur * 0.5); flt.frequency.linearRampToValueAtTime(cutoff * 0.6, t + dur);
+    flt.connect(R.music);
+    notes.forEach(function (m, k) {
+      var g = R.ac.createGain(), o = R.ac.createOscillator();
+      o.type = type; o.frequency.value = hz(m); o.detune.value = (k - 1.5) * 6;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(peak, t + Math.min(1.2, dur * 0.3));
+      g.gain.setValueAtTime(peak, t + dur - Math.min(1, dur * 0.25)); g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.4);
+      o.connect(g); g.connect(flt); o.start(t); o.stop(t + dur + 0.5);
+    });
+  }
+  function bass(t, m, dur, vol) { var g = R.ac.createGain(); env(g, t, vol || 0.16, 0.03, dur); g.connect(R.music); osc("sine", m, t, dur + 0.1, g); var h = R.ac.createGain(); h.gain.value = 0.45; h.connect(g); osc("triangle", m + 12, t, dur + 0.1, h); }
+  function kick(t, vol) {
+    var o = R.ac.createOscillator(), g = R.ac.createGain();
+    o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.18);
+    g.gain.setValueAtTime(vol || 0.22, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    o.connect(g); g.connect(R.music); o.start(t); o.stop(t + 0.32);
+  }
+  function hat(t, vol) {
+    var s = R.ac.createBufferSource(), f = R.ac.createBiquadFilter(), g = R.ac.createGain();
+    s.buffer = R.noise; f.type = "highpass"; f.frequency.value = 7000;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+    s.connect(f); f.connect(g); g.connect(R.music); s.start(t, Math.random()); s.stop(t + 0.08);
+  }
+  function pluck(t, m, vol) {               // plucked string: bright attack that mellows quickly
+    var g = R.ac.createGain(); env(g, t, vol * 0.38, 0.004, 1.6);
+    var f = R.ac.createBiquadFilter(); f.type = "lowpass"; f.Q.value = 2;
+    f.frequency.setValueAtTime(Math.min(9000, hz(m) * 8), t); f.frequency.exponentialRampToValueAtTime(Math.max(300, hz(m) * 1.5), t + 0.5);
+    g.connect(f); f.connect(R.music); f.connect(R.echo);
+    osc("triangle", m, t, 1.7, g);
+    var h = R.ac.createGain(); h.gain.value = 0.35; h.connect(g); osc("sawtooth", m, t, 0.4, h);
+    var o2 = R.ac.createGain(); o2.gain.value = 0.2; o2.connect(g); osc("sine", m + 12, t, 1.7, o2);
+  }
+  function bell(t, m, vol) {
+    var g = R.ac.createGain(); env(g, t, vol, 0.005, 2.6); g.connect(R.music); g.connect(R.echo);
+    osc("sine", m, t, 2.8, g);
+    var h = R.ac.createGain(); h.gain.value = 0.3; h.connect(g); var o = R.ac.createOscillator(); o.frequency.value = hz(m) * 2.76; o.connect(h); o.start(t); o.stop(t + 1.2);
+  }
+
+  // ---- stations ----
+  var STATIONS = {
+    midnight: {
+      name: "Midnight Pages", mood: "Lo-fi beats, music box, vinyl", bpm: 72, echo: 0.75,
+      chords: [{ r: 41, n: [53, 57, 60, 64] }, { r: 40, n: [52, 55, 59, 62] }, { r: 38, n: [50, 53, 57, 60] }, { r: 36, n: [48, 52, 55, 59] }],
+      mel: [[3, 12, 14, -1, 13, 12, 3, -1], [12, -1, 13, 14, 13, -1, 3, 2], [14, 13, 12, -1, 3, -1, 12, 13], [12, -1, 3, 2, 3, -1, -1, -1]],
+      play: function (t, bar, s, beat, step) {
+        var c = this.chords[bar % 4], sw = (s % 2) ? step * 0.12 : 0;
+        if (s === 0) { pad(t, c.n, beat * 4, "triangle", 0.04, 1300); bass(t, c.r, beat * 1.8); kick(t); }
+        if (s === 4) bass(t, c.r + 7, beat * 1.6);
+        if (s === 5 && bar % 2) kick(t + sw);
+        hat(t + sw, s % 2 ? 0.035 : 0.02);
+        var n = this.mel[bar % 4][s]; if (n >= 0) musicBox(t + sw, (n >= 12 ? c.n[n - 12] + 12 : c.n[n]) + 12, 0.1 + Math.random() * 0.02);
+      }
+    },
+    rainy: {
+      name: "Rainy Window", mood: "Slow keys, soft and sleepy", bpm: 62, echo: 0.9, ambience: "rain",
+      chords: [{ r: 45, n: [57, 60, 64, 67] }, { r: 41, n: [53, 57, 60, 64] }, { r: 36, n: [52, 55, 59, 62] }, { r: 43, n: [55, 59, 62, 64] }],
+      mel: [[-1, -1, 3, -1, 14, -1, 13, -1], [12, -1, -1, -1, 3, -1, -1, -1], [-1, 13, -1, 14, -1, 13, 12, -1], [3, -1, -1, -1, -1, -1, -1, -1]],
+      play: function (t, bar, s, beat) {
+        var c = this.chords[bar % 4];
+        if (s === 0) { c.n.forEach(function (m, k) { keys(t + k * 0.03, m, 0.05, beat * 3); }); bass(t, c.r, beat * 3, 0.13); kick(t, 0.12); }
+        if (s === 5) c.n.slice(1).forEach(function (m, k) { keys(t + k * 0.03, m, 0.022, beat * 1.5); });
+        var n = this.mel[bar % 4][s]; if (n >= 0) keys(t, (n >= 12 ? c.n[n - 12] + 12 : c.n[n]) + 12, 0.06, beat * 2);
+      }
+    },
+    campfire: {
+      name: "Campfire", mood: "Plucked strings by the fire", bpm: 80, echo: 0.56, ambience: "fire",
+      chords: [{ r: 38, n: [50, 54, 57, 61] }, { r: 35, n: [47, 50, 54, 57] }, { r: 31, n: [43, 47, 50, 54] }, { r: 33, n: [45, 49, 52, 54] }],
+      pat: [0, 2, 1, 3, 2, 1, 3, 2],
+      play: function (t, bar, s, beat) {
+        var c = this.chords[bar % 4], m = c.n[this.pat[s]] + (s === 3 || s === 6 ? 12 : 0);
+        pluck(t + Math.random() * 0.01, m, s === 0 ? 0.5 : 0.32);
+        if (s === 0) bass(t, c.r + 12, beat * 2.2, 0.12);
+        if (s === 4) bass(t, c.r + 19, beat * 1.6, 0.09);
+        if (s % 2 === 1) hat(t, 0.012);
+      }
+    },
+    aurora: {
+      name: "Aurora", mood: "Floating pads, no drums", bpm: 50, echo: 1.2,
+      chords: [{ r: 39, n: [51, 55, 58, 62, 65] }, { r: 36, n: [48, 51, 55, 58, 62] }, { r: 32, n: [44, 48, 51, 55, 58] }, { r: 34, n: [46, 51, 53, 58, 60] }],
+      play: function (t, bar, s, beat) {
+        var c = this.chords[bar % 4];
+        if (s === 0) { pad(t, c.n, beat * 4.2, "sawtooth", 0.018, 1600); pad(t, [c.n[0] + 12, c.n[2] + 12], beat * 4.2, "sine", 0.02, 2400); bass(t, c.r, beat * 4, 0.1); }
+        if (Math.random() < 0.3) bell(t, c.n[Math.floor(Math.random() * c.n.length)] + 24, 0.07);
+      }
+    }
+  };
+  function schedule() {
+    var st = STATIONS[R.station], beat = 60 / st.bpm, step = beat / 2;
+    while (R.next < R.ac.currentTime + 0.4) {
+      var bar = Math.floor(R.i / 8), s = R.i % 8;
+      st.play(R.next, bar, s, beat, step);
+      R.next += step; R.i++;
+    }
+  }
+  function startStation() {
+    var st = STATIONS[R.station];
+    R.echo.delayTime.setTargetAtTime(Math.min(1.9, st.echo * 60 / st.bpm), R.ac.currentTime, 0.05);
+    R.i = 0; R.next = R.ac.currentTime + 0.15;
+    clearInterval(R.timer); R.timer = setInterval(schedule, 100); schedule();
+  }
+  var unlockEl = null;
+  function unlockSilentMode() {
+    try {
+      if (!unlockEl) { unlockEl = new Audio("data:audio/wav;base64,UklGRsQPAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YaAPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"); unlockEl.loop = true; unlockEl.setAttribute("playsinline", ""); unlockEl.volume = 0.01; }
+      var pr = unlockEl.play(); if (pr && pr.catch) pr.catch(function () {});
+    } catch (e) {}
+  }
+  function setPlaying(on) {
+    if (on) {
+      unlockSilentMode();
+      if (!ensureAudio()) { toast("Your browser can't play sound here."); return; }
+      R.ac.resume(); R.playing = true; startStation();
+      R.music.gain.cancelScheduledValues(R.ac.currentTime); R.music.gain.setTargetAtTime(1, R.ac.currentTime, 0.5);
+    } else if (R.ac) {
+      R.playing = false;
+      R.music.gain.cancelScheduledValues(R.ac.currentTime); R.music.gain.setTargetAtTime(0, R.ac.currentTime, 0.25);
+      setTimeout(function () { if (!R.playing) clearInterval(R.timer); }, 1200);
+    }
+    syncRadio();
+  }
+  function setStation(id) {
+    if (!STATIONS[id]) return;
+    var changed = id !== R.station; R.station = id; saveRadio();
+    var amb = STATIONS[id].ambience;
+    if (changed && amb && !R[amb]) setAmbience(amb, true);
+    if (R.playing && changed) {
+      R.music.gain.cancelScheduledValues(R.ac.currentTime); R.music.gain.setTargetAtTime(0, R.ac.currentTime, 0.15);
+      setTimeout(function () { if (R.playing) { startStation(); R.music.gain.setTargetAtTime(1, R.ac.currentTime, 0.4); } }, 450);
+    } else if (!R.playing) setPlaying(true);
+    say(pick(["Ooh, good pick.", "This one makes my wings tingle.", "Changing the station. Very DJ of me."]), 3000);
+    syncRadio();
+  }
+  function setAmbience(which, on) {
+    R[which] = on;
+    if (on) unlockSilentMode();
+    if (on && !ensureAudio()) return;
+    if (R.ac) { R.ac.resume(); var g = which === "rain" ? R.rainGain : R.fireGain; g.gain.setTargetAtTime(on ? (which === "rain" ? 0.55 : 0.38) : 0, R.ac.currentTime, 0.4); }
+    syncRadio();
+  }
+  function syncRadio() {
+    $("musicBtn").setAttribute("aria-pressed", String(R.playing || R.rain || R.fire));
+    $("radioPlay").textContent = R.playing ? "Pause music" : "Play music";
+    $("radioPlay").setAttribute("aria-pressed", String(R.playing));
+    document.querySelectorAll(".station").forEach(function (b) {
+      var on = b.getAttribute("data-id") === R.station;
+      b.setAttribute("aria-pressed", String(on));
+      b.classList.toggle("live", on && R.playing);
+    });
+    $("rainBtn").setAttribute("aria-pressed", String(R.rain));
+    $("fireBtn").setAttribute("aria-pressed", String(R.fire));
+    $("volume").value = Math.round(R.vol * 100);
+  }
+  function openRadio(open) {
+    var p = $("radio"); p.hidden = !open; $("musicBtn").setAttribute("aria-expanded", String(open));
+    if (open) syncRadio();
+  }
+  $("musicBtn").addEventListener("click", function (e) { e.stopPropagation(); openRadio($("radio").hidden); });
+  document.addEventListener("click", function (e) { if (!$("radio").hidden && !e.target.closest("#radio")) openRadio(false); });
+  $("radioPlay").addEventListener("click", function () { setPlaying(!R.playing); });
+  document.querySelectorAll(".station").forEach(function (b) { b.addEventListener("click", function () { setStation(b.getAttribute("data-id")); }); });
+  $("rainBtn").addEventListener("click", function () { setAmbience("rain", !R.rain); });
+  $("fireBtn").addEventListener("click", function () { setAmbience("fire", !R.fire); });
+  $("volume").addEventListener("input", function () {
+    R.vol = this.value / 100; saveRadio();
+    if (R.master) R.master.gain.setTargetAtTime(R.vol, R.ac.currentTime, 0.05);
+  });
+
+  // ---------- Focus mode ----------
+  function setFocusMode(on) {
+    document.body.classList.toggle("focus-mode", on);
+    $("focusBtn").setAttribute("aria-pressed", String(on));
+    $("focusSubject").textContent = T.subject ? T.subject : "";
+    closeDrawers(); openRadio(false);
+    try {
+      if (on && document.documentElement.requestFullscreen && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(function () {});
+      if (!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {});
+    } catch (e) {}
+    setTimeout(function () { if (!bubble.classList.contains("hide")) placeBubble(); }, 400);
+    if (on) say(pick(["Focus mode. I'll be very quiet. Mostly.", "Just us and the mountain now."]), 3500);
+  }
+  $("focusBtn").addEventListener("click", function () { setFocusMode(!document.body.classList.contains("focus-mode")); });
+  $("exitFocus").addEventListener("click", function () { setFocusMode(false); });
+  document.addEventListener("fullscreenchange", function () { if (!document.fullscreenElement && document.body.classList.contains("focus-mode")) { /* stay in focus mode; only fullscreen ended */ } });
+  document.addEventListener("keydown", function (e) {
+    if (e.target.matches("input")) return;
+    if (e.key === "f" || e.key === "F") setFocusMode(!document.body.classList.contains("focus-mode"));
+    if (e.key === "Escape" && document.body.classList.contains("focus-mode")) setFocusMode(false);
+  });
+
+  // ---------- Clock loop ----------
+  var lastActive = Date.now(), lastNudge = Date.now();
+  function tick() {
+    if (T.running && remaining() <= 0) finish();
+    render();
+    var now = Date.now();
+    // a gentle word now and then during a focus session (every ~6 minutes)
+    if (T.running && T.mode === "focus" && now - lastNudge > 6 * 60000) { lastNudge = now; say(pick(LINES.focus), 4500); }
+    // doze off after a while with nothing happening
+    if (!T.running && now - lastActive > 3 * 60000 && nimbu.getAttribute("data-mood") === "idle") setMood("sleep");
+  }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { if (T.running) holdScreen(true); tick(); paint(); } });
+  window.addEventListener("resize", function () { if (!bubble.classList.contains("hide")) placeBubble(); });
+
+  // ---------- Boot ----------
+  bindClear();
+  $("nimbuMove").style.transition = "none";
+  drawCamps(); paint(); syncSettings();
+  if (T.running && remaining() <= 0) finish();
+  render(); renderJournal();
+  requestAnimationFrame(function () { requestAnimationFrame(function () { $("nimbuMove").style.transition = ""; }); });
+  setInterval(tick, 500);
+  setInterval(paint, 60000);
+  if (T.running) setMood(T.mode === "focus" ? "focus" : "happy");
+  setTimeout(function () { say(today().length >= S.goal ? pick(LINES.summit) : pick(LINES.hello), 6000); }, 700);
+})();
+</script>
+<script>
+  // Install support: lets the app work offline and be added to the home screen
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  }
+</script>
+</body>
+</html>
